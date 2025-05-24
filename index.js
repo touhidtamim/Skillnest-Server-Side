@@ -35,7 +35,7 @@ async function run() {
     const db = client.db("skillnest");
     const tasksCollection = db.collection("tasks");
 
-    // 📤 POST: Add a Task
+    // POST: Add a Task
     app.post('/tasks', async (req, res) => {
       try {
         const task = req.body;
@@ -47,7 +47,7 @@ async function run() {
       }
     });
 
-    // 📥 GET: All Tasks
+    // GET: All Tasks
     app.get('/tasks', async (req, res) => {
       try {
         const tasks = await tasksCollection.find().toArray();
@@ -58,7 +58,7 @@ async function run() {
       }
     });
 
-    // 🔍 GET: Single Task by ID
+    // GET: Single Task by ID
     app.get('/tasks/:id', async (req, res) => {
       try {
         const id = req.params.id;
@@ -73,7 +73,37 @@ async function run() {
       }
     });
 
-    // 🚀 Start the server
+    // GET: My Posted Tasks (by user email)
+    app.get('/my-tasks', async (req, res) => {
+      try {
+        const userEmail = req.query.email;
+        if (!userEmail) {
+          return res.status(400).json({ error: "Email query parameter is required" });
+        }
+        const userTasks = await tasksCollection.find({ email: userEmail }).toArray();
+        res.send(userTasks);
+      } catch (error) {
+        console.error('❌ Error fetching user tasks:', error);
+        res.status(500).json({ error: 'Failed to fetch user tasks' });
+      }
+    });
+
+    // DELETE: Delete a Task by ID
+    app.delete('/tasks/:id', async (req, res) => {
+      try {
+        const id = req.params.id;
+        const result = await tasksCollection.deleteOne({ _id: new ObjectId(id) });
+        if (result.deletedCount === 0) {
+          return res.status(404).json({ error: 'Task not found' });
+        }
+        res.json({ message: 'Task deleted successfully', deletedCount: result.deletedCount });
+      } catch (error) {
+        console.error('❌ Error deleting task:', error);
+        res.status(500).json({ error: 'Failed to delete task' });
+      }
+    });
+
+    // Start server
     app.listen(port, () => {
       console.log(`🚀 Server running at http://localhost:${port}`);
     });
