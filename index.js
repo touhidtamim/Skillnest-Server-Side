@@ -6,19 +6,19 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 5000;
 
-// Middleware
+// ===== Middleware =====
 app.use(cors());
 app.use(express.json());
 
-// Root route
+// ===== Root Route =====
 app.get('/', (req, res) => {
   res.send('SkillNest Server is Running');
 });
 
-// MongoDB URI
+// ===== MongoDB Connection URI =====
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.vp1yd11.mongodb.net/?retryWrites=true&w=majority&appName=SkillNest`;
 
-// MongoDB Client
+// ===== MongoDB Client Setup =====
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -35,7 +35,7 @@ async function run() {
     const db = client.db("skillnest");
     const tasksCollection = db.collection("tasks");
 
-    // POST: Add a Task
+    // ===== Create Task =====
     app.post('/tasks', async (req, res) => {
       try {
         const task = req.body;
@@ -47,7 +47,7 @@ async function run() {
       }
     });
 
-    // GET: All Tasks
+    // ===== Get All Tasks =====
     app.get('/tasks', async (req, res) => {
       try {
         const tasks = await tasksCollection.find().toArray();
@@ -58,7 +58,7 @@ async function run() {
       }
     });
 
-    // GET: Single Task by ID
+    // ===== Get Single Task by ID =====
     app.get('/tasks/:id', async (req, res) => {
       try {
         const id = req.params.id;
@@ -73,7 +73,7 @@ async function run() {
       }
     });
 
-    // GET: My Posted Tasks (by user email)
+    // ===== Get Tasks by User Email =====
     app.get('/my-tasks', async (req, res) => {
       try {
         const userEmail = req.query.email;
@@ -88,14 +88,38 @@ async function run() {
       }
     });
 
-    // DELETE: Delete a Task by ID
+    // ===== Update Task by ID =====
+    app.put('/tasks/:id', async (req, res) => {
+      try {
+        const id = req.params.id;
+        const updatedTask = req.body;
+
+        const result = await tasksCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: updatedTask }
+        );
+
+        if (result.matchedCount === 0) {
+          return res.status(404).json({ error: "Task not found" });
+        }
+
+        res.send({ message: "Task updated successfully" });
+      } catch (error) {
+        console.error("❌ Error updating task:", error);
+        res.status(500).json({ error: "Failed to update task" });
+      }
+    });
+
+    // ===== Delete Task by ID =====
     app.delete('/tasks/:id', async (req, res) => {
       try {
         const id = req.params.id;
         const result = await tasksCollection.deleteOne({ _id: new ObjectId(id) });
+
         if (result.deletedCount === 0) {
           return res.status(404).json({ error: 'Task not found' });
         }
+
         res.json({ message: 'Task deleted successfully', deletedCount: result.deletedCount });
       } catch (error) {
         console.error('❌ Error deleting task:', error);
@@ -103,7 +127,7 @@ async function run() {
       }
     });
 
-    // Start server
+    // ===== Start Server =====
     app.listen(port, () => {
       console.log(`🚀 Server running at http://localhost:${port}`);
     });
