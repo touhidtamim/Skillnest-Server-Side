@@ -15,10 +15,10 @@ app.get('/', (req, res) => {
   res.send('SkillNest Server is Running');
 });
 
-// MongoDB URI from .env
+// MongoDB URI
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.vp1yd11.mongodb.net/?retryWrites=true&w=majority&appName=SkillNest`;
 
-// MongoDB client
+// MongoDB Client
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -35,30 +35,30 @@ async function run() {
     const db = client.db("skillnest");
     const tasksCollection = db.collection("tasks");
 
-    // 🔸 POST: Add a task
+    // 📤 POST: Add a Task
     app.post('/tasks', async (req, res) => {
       try {
         const task = req.body;
         const result = await tasksCollection.insertOne(task);
         res.send(result);
       } catch (error) {
-        console.error('❌ Failed to add task:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        console.error('❌ Error adding task:', error);
+        res.status(500).json({ error: 'Failed to add task' });
       }
     });
 
-    // 🔸 GET: All tasks
+    // 📥 GET: All Tasks
     app.get('/tasks', async (req, res) => {
       try {
         const tasks = await tasksCollection.find().toArray();
         res.send(tasks);
       } catch (error) {
-        console.error('❌ Failed to fetch tasks:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        console.error('❌ Error fetching tasks:', error);
+        res.status(500).json({ error: 'Failed to fetch tasks' });
       }
     });
 
-    // 🔸 GET: Single task by ID
+    // 🔍 GET: Single Task by ID
     app.get('/tasks/:id', async (req, res) => {
       try {
         const id = req.params.id;
@@ -68,12 +68,12 @@ async function run() {
         }
         res.send(task);
       } catch (error) {
-        console.error('❌ Failed to fetch task:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        console.error('❌ Error fetching task by ID:', error);
+        res.status(500).json({ error: 'Failed to fetch task' });
       }
     });
 
-    // Start server
+    // 🚀 Start the server
     app.listen(port, () => {
       console.log(`🚀 Server running at http://localhost:${port}`);
     });
@@ -85,5 +85,3 @@ async function run() {
 }
 
 run().catch(console.dir);
-
-
