@@ -6,20 +6,15 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 5000;
 
-// Middleware Setup
-
 app.use(cors());
 app.use(express.json());
 
-//Root Route 
 app.get('/', (req, res) => {
   res.send('SkillNest Server is Running');
 });
 
-// MongoDB Connection String 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.vp1yd11.mongodb.net/?retryWrites=true&w=majority&appName=SkillNest`;
 
-// Setup MongoDB Client
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -28,142 +23,87 @@ const client = new MongoClient(uri, {
   },
 });
 
-//  Main Function to run the server and connect to DB
 async function run() {
   try {
     await client.connect();
-    console.log(" MongoDB Connected");
-
-    // Select database and collection
     const db = client.db("skillnest");
     const tasksCollection = db.collection("tasks");
 
-    
-    // Add new task 
+    // Create task
     app.post('/tasks', async (req, res) => {
-      try {
-        const task = req.body;
-        const result = await tasksCollection.insertOne(task);
-        res.send(result);
-      } catch (error) {
-        console.log(' Error adding task:', error);
-        res.status(500).json({ error: 'Failed to add task' });
-      }
+      const task = req.body;
+      const result = await tasksCollection.insertOne(task);
+      res.send(result);
     });
 
-    // Get tasks 
+    // Featured tasks (sorted by deadline, limit 6)
+    app.get('/featured-tasks', async (req, res) => {
+      const tasks = await tasksCollection.find().sort({ deadline: 1 }).limit(6).toArray();
+      res.send(tasks);
+    });
+
+    // All tasks
     app.get('/tasks', async (req, res) => {
-      try {
-        const tasks = await tasksCollection.find().toArray();
-        res.send(tasks);
-      } catch (error) {
-        console.log(' Error fetching tasks:', error);
-        res.status(500).json({ error: 'Failed to fetch tasks' });
-      }
+      const tasks = await tasksCollection.find().toArray();
+      res.send(tasks);
     });
 
-    //Get a single task by ID 
+    // Single task by ID
     app.get('/tasks/:id', async (req, res) => {
-      try {
-        const id = req.params.id;
-        const task = await tasksCollection.findOne({ _id: new ObjectId(id) });
-        if (!task) {
-          return res.status(404).json({ error: 'Task not found' });
-        }
-        res.send(task);
-      } catch (error) {
-        console.log(' Error fetching task by ID:', error);
-        res.status(500).json({ error: 'Failed to fetch task' });
-      }
+      const id = req.params.id;
+      const task = await tasksCollection.findOne({ _id: new ObjectId(id) });
+      if (!task) return res.status(404).json({ error: 'Task not found' });
+      res.send(task);
     });
 
-    //  Get tasks by user email (query param)
+    // Tasks by user email
     app.get('/my-tasks', async (req, res) => {
-      try {
-        const userEmail = req.query.email;
-        if (!userEmail) {
-          return res.status(400).json({ error: "Email is required as query parameter" });
-        }
-        const userTasks = await tasksCollection.find({ email: userEmail }).toArray();
-        res.send(userTasks);
-      } catch (error) {
-        console.log(' Error fetching user tasks:', error);
-        res.status(500).json({ error: 'Failed to fetch user tasks' });
-      }
+      const email = req.query.email;
+      if (!email) return res.status(400).json({ error: "Email query param required" });
+      const tasks = await tasksCollection.find({ email }).toArray();
+      res.send(tasks);
     });
 
-    // Update a task by ID
+    // Update task by ID
     app.put('/tasks/:id', async (req, res) => {
-      try {
-        const id = req.params.id;
-        const updatedTask = req.body;
-
-        const result = await tasksCollection.updateOne(
-          { _id: new ObjectId(id) },
-          { $set: updatedTask }
-        );
-
-        if (result.matchedCount === 0) {
-          return res.status(404).json({ error: "Task not found" });
-        }
-
-        res.send({ message: "Task updated successfully" });
-      } catch (error) {
-        console.log("Error updating task:", error);
-        res.status(500).json({ error: "Failed to update task" });
-      }
+      const id = req.params.id;
+      const updatedTask = req.body;
+      const result = await tasksCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: updatedTask }
+      );
+      if (result.matchedCount === 0) return res.status(404).json({ error: "Task not found" });
+      res.send({ message: "Task updated" });
     });
 
-    // Delete a task by ID
+    // Delete task by ID
     app.delete('/tasks/:id', async (req, res) => {
-      try {
-        const id = req.params.id;
-        const result = await tasksCollection.deleteOne({ _id: new ObjectId(id) });
-
-        if (result.deletedCount === 0) {
-          return res.status(404).json({ error: 'Task not found' });
-        }
-
-        res.json({ message: 'Task deleted successfully', deletedCount: result.deletedCount });
-      } catch (error) {
-        console.log('Error deleting task:', error);
-        res.status(500).json({ error: 'Failed to delete task' });
-      }
+      const id = req.params.id;
+      const result = await tasksCollection.deleteOne({ _id: new ObjectId(id) });
+      if (result.deletedCount === 0) return res.status(404).json({ error: 'Task not found' });
+      res.json({ message: 'Task deleted' });
     });
 
-    //PATCH: Increase bidsCount
+    // Increase bidsCount by 1
     app.patch('/tasks/:id/bid', async (req, res) => {
-      try {
-        const id = req.params.id;
-
-        // Increment bidsCount by 1
-        const result = await tasksCollection.findOneAndUpdate(
-          { _id: new ObjectId(id) },
-          { $inc: { bidsCount: 1 } },
-          { returnDocument: 'after' }
-        );
-
-        if (!result.value) {
-          return res.status(404).json({ error: 'Task not found' });
-        }
-
-        res.json({ message: 'Bid placed successfully', bidsCount: result.value.bidsCount });
-      } catch (error) {
-        console.log(' Error placing bid:', error);
-        res.status(500).json({ error: 'Failed to place bid' });
-      }
+      const id = req.params.id;
+      const result = await tasksCollection.findOneAndUpdate(
+        { _id: new ObjectId(id) },
+        { $inc: { bidsCount: 1 } },
+        { returnDocument: 'after' }
+      );
+      if (!result.value) return res.status(404).json({ error: 'Task not found' });
+      res.json({ message: 'Bid placed', bidsCount: result.value.bidsCount });
     });
 
-    // Start Express Server 
     app.listen(port, () => {
-      console.log(` Server is running on http://localhost:${port}`);
+      console.log(`Server running on PORT ${port}`);
     });
 
   } catch (error) {
-    console.log(' MongoDB connection error:', error);
+    console.error('DB connection error:', error);
     process.exit(1);
   }
 }
-
 
 run().catch(console.dir);
