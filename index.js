@@ -259,6 +259,31 @@ async function run() {
       }
     });
 
+    // ========== DASHBOARD OVERVIEW ROUTES ==========
+
+    app.get("/tasks-count", async (req, res) => {
+      try {
+        const count = await tasksCollection.countDocuments();
+        res.send({ total: count });
+      } catch (error) {
+        res.status(500).json({ error: "Failed to fetch tasks count" });
+      }
+    });
+
+    app.get("/my-tasks-count", async (req, res) => {
+      const email = req.query.email;
+      if (!email) return res.status(400).json({ error: "Email is required" });
+
+      try {
+        const count = await tasksCollection.countDocuments({
+          $or: [{ "client.email": email }, { email: email }],
+        });
+        res.send({ total: count });
+      } catch (error) {
+        res.status(500).json({ error: "Failed to fetch my task count" });
+      }
+    });
+
     // ========== FREELANCER ROUTES ==========
     app.post("/freelancers", async (req, res) => {
       const freelancer = req.body;
