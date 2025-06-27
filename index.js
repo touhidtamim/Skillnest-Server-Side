@@ -35,7 +35,7 @@ async function run() {
     const usersCollection = db.collection("users");
     const bidsCollection = db.collection("bids");
 
-    // ========== USER ROUTES ==========
+    //  USER ROUTES
     app.post("/users", async (req, res) => {
       const user = req.body;
       const result = await usersCollection.insertOne(user);
@@ -48,7 +48,7 @@ async function run() {
       res.send(user);
     });
 
-    // ========== TASK ROUTES ==========
+    //  TASK ROUTES
     app.post("/tasks", async (req, res) => {
       const task = req.body;
       const result = await tasksCollection.insertOne({
@@ -72,7 +72,7 @@ async function run() {
       res.send(task);
     });
 
-    // Rewritten /my-tasks routes without optional param
+    // my-tasks routes without optional param
     app.get("/my-tasks", async (req, res) => {
       const email = req.query.email;
       if (!email) return res.status(400).json({ error: "Email is required" });
@@ -101,7 +101,7 @@ async function run() {
       }
     });
 
-    // ✅ Updated PUT Route for Updating Task
+    //  Updated PUT Route for Updating Task
     app.put("/tasks/:id", async (req, res) => {
       const { id } = req.params;
       const updatedTask = req.body;
@@ -149,7 +149,7 @@ async function run() {
       res.send({ message: "Task deleted successfully" });
     });
 
-    // ========== FEATURED TASKS ROUTE ==========
+    //  FEATURED TASKS ROUTE
     app.get("/featured-tasks", async (req, res) => {
       try {
         const featuredTasks = await tasksCollection
@@ -164,7 +164,7 @@ async function run() {
       }
     });
 
-    // ========== BID ROUTES ==========
+    //  BID ROUTES
     app.post("/tasks/:id/bids", async (req, res) => {
       const taskId = req.params.id;
       const bid = req.body;
@@ -259,7 +259,7 @@ async function run() {
       }
     });
 
-    // ========== DASHBOARD OVERVIEW ROUTES ==========
+    //  DASHBOARD OVERVIEW ROUTES
 
     app.get("/tasks-count", async (req, res) => {
       try {
@@ -284,7 +284,7 @@ async function run() {
       }
     });
 
-    // ========== FREELANCER ROUTES ==========
+    //  FREELANCER ROUTES
     app.post("/freelancers", async (req, res) => {
       const freelancer = req.body;
       const result = await freelancersCollection.insertOne(freelancer);
@@ -318,7 +318,7 @@ async function run() {
       console.log(`Server running on port ${port}`);
     });
   } finally {
-    // await client.close(); // optional
+    // await client.close();
   }
 }
 
